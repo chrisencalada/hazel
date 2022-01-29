@@ -1,0 +1,59 @@
+from fastapi import FastAPI, HTTPException
+from typing import Optional,List,Dict
+from pydantic import BaseModel
+from datetime import date
+import json
+
+class Details(BaseModel):
+    cuisine_type: str
+
+class Restaurant(BaseModel):
+    restaurant_id: int
+    details:  Optional[Details] = None
+    name: str 
+    street_address: str
+    city: str
+    state: str
+    postal_code: str
+
+class Violation(BaseModel):
+    violation_id: int
+    is_critical: bool
+    is_repeat: Optional[bool] = None
+    is_corrected_on_site: Optional[bool] = None
+    code: int
+    description: str
+    comments: str
+
+class Inspection(BaseModel):
+    inspection_id: int
+    inspection_date: str
+    score: int
+    comments: str
+    type: Optional[str] = None
+    violations: Optional[List[Violation]] = None
+    restaurant: Optional[Restaurant]
+
+
+
+app = FastAPI()
+
+
+@app.post("/inspection")
+def get_inspection(inspection:Inspection):
+    ins_id = inspection.inspection_id
+    if inspection.score > 100 or inspection.score < 0:
+        raise HTTPException(status_code=404, detail="inspection score is not valid")
+    elif inspection.violations is None:
+        raise HTTPException(status_code=404, detail="Violations array does not exist")
+    elif inspection.restaurant.city == '':
+        raise HTTPException(status_code=404, detail="Restaurant city missing")
+    elif inspection.restaurant.name == '':
+        raise HTTPException(status_code=404, detail="Restaurant name missing")
+    elif len(inspection.restaurant.state) != 1:
+        raise HTTPException(status_code=404, detail="Restaurant state code invalid")
+    else:            
+        inspection_dict = inspection.dict()
+        with open('inspection_{}.json'.format(ins_id),"w") as file:
+            json.dump(inspection_dict,file)
+        return inspection
