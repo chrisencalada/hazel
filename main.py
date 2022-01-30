@@ -3,6 +3,8 @@ from typing import Optional,List,Dict
 from pydantic import BaseModel
 from datetime import date
 import json
+from os import listdir
+from os.path import isfile, join
 
 class Details(BaseModel):
     cuisine_type: str
@@ -39,9 +41,8 @@ class Inspection(BaseModel):
 app = FastAPI()
 
 
-@app.post("/inspection")
-def get_inspection(inspection:Inspection):
-    ins_id = inspection.inspection_id
+@app.post("/load_inspection")
+def post_inspection(inspection:Inspection):
     if inspection.score > 100 or inspection.score < 0:
         raise HTTPException(status_code=404, detail="inspection score is not valid")
     elif inspection.violations is None:
@@ -50,10 +51,22 @@ def get_inspection(inspection:Inspection):
         raise HTTPException(status_code=404, detail="Restaurant city missing")
     elif inspection.restaurant.name == '':
         raise HTTPException(status_code=404, detail="Restaurant name missing")
-    elif len(inspection.restaurant.state) != 1:
+    elif len(inspection.restaurant.state) != 2:
         raise HTTPException(status_code=404, detail="Restaurant state code invalid")
-    else:            
+    else:
+        ins_id = inspection.inspection_id            
         inspection_dict = inspection.dict()
-        with open('inspection_{}.json'.format(ins_id),"w") as file:
+        with open('processed/inspection_{}.json'.format(ins_id),"w") as file:
             json.dump(inspection_dict,file)
         return inspection
+
+
+@app.get("/get_inspection/{ins_id}")
+def get_inspection(ins_id:str):
+    file_wanted = 'processed/inspection_{}.json'.format(ins_id)
+    if isfile(file_wanted) is True:
+        with open(file_wanted,"r") as file:
+            out_file = json.load(file)
+        return out_file
+
+
