@@ -1,10 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from typing import Optional,List,Dict
 from pydantic import BaseModel
-from datetime import date
 import json
-from os import listdir
-from os.path import isfile, join
+from os.path import isfile
 
 class Details(BaseModel):
     cuisine_type: str
